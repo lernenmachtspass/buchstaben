@@ -399,6 +399,7 @@ combos.forEach(d=>{d.words=parseWords(d[0],d)});
 
 let currentIndex = 0, currentCombo = false, soundOn = true, gamePane = null;
 let curWord = null;
+let traceStarAwarded = false; // 每个字母/组合的描红练习最多奖励一次星星
 const lastPicked = {};
 const completed = new Set();
 const $ = id => document.getElementById(id);
@@ -482,6 +483,7 @@ function clearTrace(){
  $('status').textContent='沿着大写和小写模板描一描，然后点“检查描写”。';
 }
 function updateGlyph(){
+ traceStarAwarded = false;
  const gs=currentGlyphs(),d=currentData();
  panes.forEach((p,i)=>{
   p.glyph=gs[i];p.glyphEl.textContent=gs[i];p.glyphEl.setAttribute('font-size',fontSizeFor(gs[i]));
@@ -574,8 +576,14 @@ function evaluate(){
  active.forEach((o,k)=>{if(scores[k]>=75)completed.add((currentCombo?'c':'l')+currentIndex+':'+o.i)});
  $('doneCount').textContent=completed.size;
  $('score').classList.add('show');$('scoreText').textContent=`${score} 分`;
+ let rewardTip = '';
+ if(score > 95 && !traceStarAwarded){
+  traceStarAwarded = true;
+  setStars(stars + 1);
+  rewardTip = ' ⭐ 超过95分，获得1颗星星！';
+ }
  const tip=active.length<2?'（还可以再描另一个模板哦）':'';
- if(score>=75)$('status').textContent='太棒啦！字形描得很接近。'+tip;
+ if(score>=75)$('status').textContent='太棒啦！字形描得很接近。'+tip+rewardTip;
  else if(score>=45)$('status').textContent='不错！再试一次，让线条更贴近字形。'+tip;
  else $('status').textContent='再来一次吧！慢慢沿着浅蓝色字母描写。'+tip;
 }
