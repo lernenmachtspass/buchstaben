@@ -65,6 +65,9 @@ button:focus-visible{outline:3px solid #ffbf47;outline-offset:3px}
 .word-meaning{position:relative;z-index:1;margin-top:13px;background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:13px}
 .speakable:hover{opacity:.7}
 .word-speak{position:relative;z-index:1;border:0;background:#fff;width:42px;height:42px;border-radius:14px;margin-top:14px;font-size:20px;box-shadow:0 5px 14px #24305b10}
+.word-btns{position:relative;z-index:1;display:flex;gap:8px;margin-top:14px}
+.word-btns .word-speak{margin-top:0}
+.word-btns .word-shuffle{width:auto;padding:0 14px;font-size:13px;font-weight:800;color:#4e5674}
 .practice-panel{min-width:0;display:flex;flex-direction:column;gap:12px}
 .letter-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .letter-toolbar p{margin:0;font-size:13px;color:var(--muted);font-weight:700}
@@ -228,7 +231,10 @@ button:focus-visible{outline:3px solid #ffbf47;outline-offset:3px}
         <button class="word-meta speakable" id="wordArticle" title="点一点，听带冠词的读法">der Affe</button>
         <div class="word-pos" id="wordPos">词性：名词 · 阳性</div>
         <div class="word-meaning" id="wordMeaning">猴子</div>
-        <button class="word-speak" id="wordSpeak" aria-label="播放单词发音" title="听单词发音">🔊</button>
+        <div class="word-btns">
+          <button class="word-speak" id="wordSpeak" aria-label="播放单词发音" title="听单词发音">🔊</button>
+          <button class="word-speak word-shuffle" id="wordShuffle" title="换一个单词">🔀 换个词</button>
+        </div>
       </aside>
       <div class="practice-panel">
         <div class="letter-toolbar">
@@ -301,6 +307,7 @@ button:focus-visible{outline:3px solid #ffbf47;outline-offset:3px}
 
 <script>
 (() => {
+// 每个字母/组合都有 5–10 个备选单词（WORDS），每次点选随机抽一个显示；全部单词都进入小游戏词库。
 // 每个单词都必须带冠词（der/die/das），由冠词得出词性与性别；没有词性的单词会被自动过滤掉。
 const rawLetters = [
  ['A','a','🐒','Affe','der Affe','猴子'],['B','b','🐻','Bär','der Bär','熊'],['C','c','🤡','Clown','der Clown','小丑'],
@@ -312,7 +319,7 @@ const rawLetters = [
  ['S','s','☀️','Sonne','die Sonne','太阳'],['T','t','🐯','Tiger','der Tiger','老虎'],['U','u','🦉','Uhu','der Uhu','雕鸮'],
  ['V','v','🎻','Violine','die Violine','小提琴'],['W','w','🐺','Wolf','der Wolf','狼'],['X','x','🎶','Xylophon','das Xylophon','木琴'],
  ['Y','y','🪀','Yoyo','das Yoyo','悠悠球'],['Z','z','🦓','Zebra','das Zebra','斑马'],
- ['Ä','ä','🐵','Äffchen','das Äffchen','小猴子'],['Ö','ö','🛢️','Öl','das Öl','油'],['Ü','ü','🎒','Übung','die Übung','练习'],['ẞ','ß','🛣️','Straße','die Straße','街道']
+ ['Ä','ä','🐵','Äffchen','das Äffchen','小猴子'],['Ö','ö','🛢️','Öl','das Öl','油'],['Ü','ü','📝','Übung','die Übung','练习'],['ẞ','ß','🛣️','Straße','die Straße','街道']
 ];
 const rawCombos = [
  ['ei','Eis','🍦','Eis','das Eis','雪糕'],['ie','Biene','🐝','Biene','die Biene','蜜蜂'],['eu','Eule','🦉','Eule','die Eule','猫头鹰'],
@@ -321,6 +328,55 @@ const rawCombos = [
  ['qu','Qualle','🪼','Qualle','die Qualle','水母'],['pf','Pferd','🐴','Pferd','das Pferd','马'],['ng','Finger','☝️','Finger','der Finger','手指'],
  ['ck','Jacke','🧥','Jacke','die Jacke','夹克'],['tz','Katze','🐈','Katze','die Katze','猫']
 ];
+
+// 备选单词库：格式 "表情|冠词 单词|中文"，用 ; 分隔
+const WORDS = {
+ 'A':'🐒|der Affe|猴子;🍎|der Apfel|苹果;🚗|das Auto|汽车;👁️|das Auge|眼睛;🍍|die Ananas|菠萝;🐜|die Ameise|蚂蚁',
+ 'B':'🐻|der Bär|熊;🍌|die Banane|香蕉;🐝|die Biene|蜜蜂;📖|das Buch|书;🚌|der Bus|公共汽车;🌳|der Baum|树;⚽|der Ball|球;🍞|das Brot|面包',
+ 'C':'🤡|der Clown|小丑;💻|der Computer|电脑;🥤|die Cola|可乐;🍪|der Cookie|曲奇饼;🦎|das Chamäleon|变色龙',
+ 'D':'🐉|der Drache|龙;🐬|der Delfin|海豚;🦕|der Dino|恐龙;🍩|der Donut|甜甜圈;🥫|die Dose|罐头;🚿|die Dusche|淋浴',
+ 'E':'🐘|der Elefant|大象;🦆|die Ente|鸭子;🥚|das Ei|蛋;🍦|das Eis|冰淇淋;🐿️|das Eichhörnchen|松鼠;🪣|der Eimer|水桶;🌍|die Erde|地球',
+ 'F':'🐟|der Fisch|鱼;🐸|der Frosch|青蛙;🦊|der Fuchs|狐狸;🔥|das Feuer|火;✈️|das Flugzeug|飞机;🚲|das Fahrrad|自行车;🧚|die Fee|仙女',
+ 'G':'🦒|die Giraffe|长颈鹿;🎸|die Gitarre|吉他;🥒|die Gurke|黄瓜;🎁|das Geschenk|礼物;👻|das Gespenst|幽灵;🍴|die Gabel|叉子;🏡|der Garten|花园',
+ 'H':'🏠|das Haus|房子;🐕|der Hund|狗;🐔|das Huhn|母鸡;🐰|der Hase|兔子;🎩|der Hut|帽子;🚁|der Hubschrauber|直升机;🍯|der Honig|蜂蜜;✋|die Hand|手',
+ 'I':'🦔|der Igel|刺猬;🏝️|die Insel|岛;💡|die Idee|主意;🌐|das Internet|互联网;🪲|das Insekt|昆虫',
+ 'J':'🧥|die Jacke|夹克;🐆|der Jaguar|美洲豹;🥛|der Joghurt|酸奶;👦|der Junge|男孩;🥋|das Judo|柔道;🤹|der Jongleur|杂耍演员',
+ 'K':'🐱|die Katze|猫;🐄|die Kuh|奶牛;🎂|der Kuchen|蛋糕;👑|die Krone|王冠;🥕|die Karotte|胡萝卜;🐫|das Kamel|骆驼;🦘|das Känguru|袋鼠;🦀|die Krabbe|螃蟹',
+ 'L':'🦁|der Löwe|狮子;🏮|die Laterne|灯笼;🐑|das Lamm|小羊;🪜|die Leiter|梯子;🥄|der Löffel|勺子;🎈|der Luftballon|气球;🚚|der Lastwagen|卡车;🚂|die Lokomotive|火车头',
+ 'M':'🐭|die Maus|老鼠;🌙|der Mond|月亮;🥛|die Milch|牛奶;🧢|die Mütze|帽子;🦟|die Mücke|蚊子;🐚|die Muschel|贝壳;🏍️|das Motorrad|摩托车;🍈|die Melone|瓜',
+ 'N':'🌰|die Nuss|坚果;👃|die Nase|鼻子;🦏|das Nashorn|犀牛;🌃|die Nacht|夜晚;🍜|die Nudel|面条;🪡|die Nadel|针;🌫️|der Nebel|雾;🦛|das Nilpferd|河马',
+ 'O':'🍊|die Orange|橙子;👂|das Ohr|耳朵;🐙|der Oktopus|章鱼;👴|der Opa|爷爷;👵|die Oma|奶奶;🌊|der Ozean|海洋',
+ 'P':'🐧|der Pinguin|企鹅;🍕|die Pizza|披萨;🐼|der Panda|熊猫;🦜|der Papagei|鹦鹉;📦|das Paket|包裹;🍄|der Pilz|蘑菇;🏴‍☠️|der Pirat|海盗;🍑|der Pfirsich|桃子',
+ 'Q':'🪼|die Qualle|水母;🟦|das Quadrat|正方形;💦|die Quelle|泉水;❓|das Quiz|问答游戏;🍐|die Quitte|榅桲',
+ 'R':'🌈|der Regenbogen|彩虹;🚀|die Rakete|火箭;🐀|die Ratte|大老鼠;🌹|die Rose|玫瑰;🤖|der Roboter|机器人;🦌|das Rentier|驯鹿;🍚|der Reis|米饭;🌧️|der Regen|雨',
+ 'S':'☀️|die Sonne|太阳;🛋️|das Sofa|沙发;🧼|die Seife|肥皂;🥗|der Salat|沙拉;🍲|die Suppe|汤;⛵|das Segelboot|帆船;🧦|die Socke|袜子',
+ 'T':'🐯|der Tiger|老虎;🍅|die Tomate|西红柿;🚪|die Tür|门;🥁|die Trommel|鼓;☕|die Tasse|杯子;🚜|der Traktor|拖拉机;🌷|die Tulpe|郁金香;🕊️|die Taube|鸽子',
+ 'U':'🦉|der Uhu|雕鸮;🕐|die Uhr|钟表;🛸|das Ufo|飞碟;🤗|die Umarmung|拥抱;🦸|der Umhang|披风',
+ 'V':'🎻|die Violine|小提琴;🐦|der Vogel|鸟;🧛|der Vampir|吸血鬼;🌋|der Vulkan|火山;🏺|die Vase|花瓶;👨|der Vater|爸爸',
+ 'W':'🐺|der Wolf|狼;🐋|der Wal|鲸鱼;🌲|der Wald|森林;☁️|die Wolke|云;🍉|die Wassermelone|西瓜;💧|das Wasser|水;💨|der Wind|风;🌭|die Wurst|香肠',
+ 'X':'🎶|das Xylophon|木琴;🧙‍♀️|die Hexe|女巫;🚕|das Taxi|出租车;🪓|die Axt|斧头;🥊|der Boxer|拳击手',
+ 'Y':'🪀|das Yoyo|悠悠球;🐃|der Yak|牦牛;🛥️|die Yacht|游艇;🧘|das Yoga|瑜伽;🏔️|der Yeti|雪人',
+ 'Z':'🦓|das Zebra|斑马;🦷|der Zahn|牙齿;🚆|der Zug|火车;🍋|die Zitrone|柠檬;🎪|der Zirkus|马戏团;⛺|das Zelt|帐篷;🧙|der Zauberer|魔法师;🧅|die Zwiebel|洋葱',
+ 'Ä':'🐵|das Äffchen|小猴子;👩‍⚕️|die Ärztin|女医生;🌾|die Ähre|麦穗;👕|der Ärmel|袖子;😠|der Ärger|生气',
+ 'Ö':'🛢️|das Öl|油;🖼️|das Ölbild|油画;🛳️|der Öltanker|油轮;🪔|die Öllampe|油灯;🐟|die Ölsardine|油浸沙丁鱼',
+ 'Ü':'📝|die Übung|练习;🎉|die Überraschung|惊喜;🛏️|die Übernachtung|过夜;🌉|die Überführung|天桥;📑|die Überschrift|标题',
+ 'ẞ':'🛣️|die Straße|街道;🦶|der Fuß|脚;👋|der Gruß|问候;🍝|die Soße|酱汁;🛶|das Floß|木筏;⚽|der Fußball|足球;🍬|die Süßigkeit|糖果;🤣|der Spaß|乐趣',
+ 'ei':'🍦|das Eis|雪糕;🥚|das Ei|蛋;🐖|das Schwein|猪;🦵|das Bein|腿;🪨|der Stein|石头;🧼|die Seife|肥皂;🐻‍❄️|der Eisbär|北极熊',
+ 'ie':'🐝|die Biene|蜜蜂;🐾|das Tier|动物;🌿|die Wiese|草地;🪞|der Spiegel|镜子;✉️|der Brief|信;🐐|die Ziege|山羊;🪰|die Fliege|苍蝇;📄|das Papier|纸',
+ 'eu':'🦉|die Eule|猫头鹰;🔥|das Feuer|火;💶|der Euro|欧元;🧑‍🤝‍🧑|der Freund|朋友;🛍️|der Beutel|袋子;🌾|das Heu|干草',
+ 'äu':'🦹|der Räuber|强盗;🏡|das Häuschen|小房子;🏛️|die Säule|柱子;🏃|der Läufer|跑步者;🏢|das Gebäude|建筑物;🔊|das Geräusch|声音',
+ 'au':'🚗|das Auto|汽车;🐭|die Maus|老鼠;🏠|das Haus|房子;🌳|der Baum|树;👁️|das Auge|眼睛;👩|die Frau|女人;🍇|die Traube|葡萄;🐛|die Raupe|毛毛虫',
+ 'sch':'🚢|das Schiff|船;🐍|die Schlange|蛇;❄️|der Schnee|雪;🐌|die Schnecke|蜗牛;🦋|der Schmetterling|蝴蝶;🐑|das Schaf|绵羊;👟|der Schuh|鞋;🏫|die Schule|学校',
+ 'ch':'📘|das Buch|书;🥛|die Milch|牛奶;💡|das Licht|灯光;🌃|die Nacht|夜晚;⛪|die Kirche|教堂;🍳|die Küche|厨房;🏞️|der Bach|小溪',
+ 'sp':'🕷️|die Spinne|蜘蛛;🎲|das Spiel|游戏;🧸|das Spielzeug|玩具;🐦|der Spatz|麻雀;🏅|der Sport|运动;🥓|der Speck|培根;🪞|der Spiegel|镜子',
+ 'st':'⭐|der Stern|星星;🪨|der Stein|石头;🪑|der Stuhl|椅子;✏️|der Stift|笔;👢|der Stiefel|靴子;🏙️|die Stadt|城市;🏖️|der Strand|海滩;🛣️|die Straße|街道',
+ 'qu':'🪼|die Qualle|水母;🟦|das Quadrat|正方形;💦|die Quelle|泉水;❓|das Quiz|问答游戏;🍐|die Quitte|榅桲',
+ 'pf':'🐴|das Pferd|马;🍑|der Pfirsich|桃子;🥞|der Pfannkuchen|薄饼;🦚|der Pfau|孔雀;🍳|die Pfanne|平底锅;🌶️|der Pfeffer|胡椒;🐾|die Pfote|爪子;💦|die Pfütze|水坑',
+ 'ng':'☝️|der Finger|手指;🤴|der König|国王;💍|der Ring|戒指;👅|die Zunge|舌头;🎣|die Angel|鱼竿;😇|der Engel|天使;👦|der Junge|男孩;🐍|die Schlange|蛇',
+ 'ck':'🧥|die Jacke|夹克;🧦|die Socke|袜子;🎒|der Rucksack|背包;🌉|die Brücke|桥;🦟|die Mücke|蚊子;📐|die Ecke|角落;🍬|der Zucker|糖;🥖|der Bäcker|面包师',
+ 'tz':'🐈|die Katze|猫;🐦|der Spatz|麻雀;🏟️|der Platz|广场;💰|der Schatz|宝藏;😂|der Witz|笑话;⚡|der Blitz|闪电;🧢|die Mütze|帽子;💦|die Pfütze|水坑'
+};
+
 const HAND='"Playpen Sans Deutsch","Segoe Print","Bradley Hand","Chalkboard SE","Comic Sans MS","Marker Felt",cursive';
 if(document.fonts&&document.fonts.load)document.fonts.load('700 100px "Playpen Sans Deutsch"');
 const GENDER={der:'阳性',die:'阴性',das:'中性'};
@@ -328,10 +384,22 @@ function getPos(article){
  const g=GENDER[(article||'').split(' ')[0]];
  return g?'词性：名词 · '+g:null;
 }
+// 单词统一格式：[null,null,表情,单词,冠词+单词,中文]，与原数组的 d[2..5] 对齐
+function parseWords(key,d){
+ const list=(WORDS[key]||'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>{
+  const [e,art,zh]=s.split('|');
+  return [null,null,e,art.split(' ').slice(1).join(' '),art,zh];
+ }).filter(w=>w[2]&&w[3]&&getPos(w[4]));
+ return list.length?list:[[null,null,d[2],d[3],d[4],d[5]]];
+}
 const letters = rawLetters.filter(d=>getPos(d[4]));
 const combos = rawCombos.filter(d=>getPos(d[4]));
+letters.forEach(d=>{d.words=parseWords(d[0],d)});
+combos.forEach(d=>{d.words=parseWords(d[0],d)});
 
 let currentIndex = 0, currentCombo = false, soundOn = true, gamePane = null;
+let curWord = null;
+const lastPicked = {};
 const completed = new Set();
 const $ = id => document.getElementById(id);
 const letterGrid = $('letterGrid'), comboGrid = $('comboGrid');
@@ -348,7 +416,19 @@ function createLetterGrid(){
  });
 }
 function currentData(){return currentCombo?combos[currentIndex]:letters[currentIndex]}
-// 两个模板：[大写, 小写]；字母组合则为 [首字母大写, 小写]
+// 随机抽一个单词（尽量不和上一次重复）
+function pickWord(d){
+ const key=(currentCombo?'c':'l')+currentIndex,ws=d.words;
+ if(ws.length<2){lastPicked[key]=ws[0];return ws[0]}
+ let w;do{w=ws[Math.floor(Math.random()*ws.length)]}while(w===lastPicked[key]);
+ lastPicked[key]=w;return w;
+}
+function showWord(w){
+ curWord=w;
+ $('wordEmoji').textContent=w[2];$('wordName').textContent=w[3];$('wordArticle').textContent=w[4];
+ $('wordPos').textContent=getPos(w[4]);$('wordMeaning').textContent=w[5];
+}
+// 两个模板：[大写, 小写]；字母组合则为 [全大写, 小写]
 function currentGlyphs(){
  const d=currentData();
  if(currentCombo){const s=d[0];return [s.toUpperCase(),s]}
@@ -415,7 +495,7 @@ function loadLesson(index,combo){
  const d=currentData();
  $('lessonSub').textContent=combo?'听一听这个组合在单词中的发音':'慢慢听发音，再练习书写';
  $('lessonTag').textContent=combo?'组合拼读':'字母练习';
- $('wordEmoji').textContent=d[2];$('wordName').textContent=d[3];$('wordArticle').textContent=d[4];$('wordPos').textContent=getPos(d[4]);$('wordMeaning').textContent=d[5];
+ showWord(pickWord(d));
  showPage('learn');
  updateGlyph();updateActive();resizeCanvas();speakLetter();
 }
@@ -438,9 +518,9 @@ function speakSequence(parts){
 }
 function speakLetter(){
  const d=currentData();
- if(currentCombo)speakSequence([d[0],d[3]]);else speak(d[1]);
+ if(currentCombo)speakSequence([d[0],curWord[3]]);else speak(d[1]);
 }
-function speakWord(){const d=currentData();speakSequence([d[3],d[4]])}
+function speakWord(){speakSequence([curWord[3],curWord[4]])}
 
 // ---------- 评分 ----------
 function maskOf(p,w,h){
@@ -505,8 +585,9 @@ function next(delta){
 }
 $('listenBtn').addEventListener('click',speakLetter);
 $('wordSpeak').addEventListener('click',speakWord);
-$('wordName').addEventListener('click',()=>speak(currentData()[3]));
-$('wordArticle').addEventListener('click',()=>speak(currentData()[4]));
+$('wordShuffle').addEventListener('click',()=>{showWord(pickWord(currentData()));speakWord()});
+$('wordName').addEventListener('click',()=>speak(curWord[3]));
+$('wordArticle').addEventListener('click',()=>speak(curWord[4]));
 $('clearBtn').addEventListener('click',clearTrace);
 $('checkBtn').addEventListener('click',evaluate);
 $('prevBtn').addEventListener('click',()=>next(-1));
@@ -529,7 +610,8 @@ const store={
  set(k,v){try{localStorage.setItem('dabc_'+k,JSON.stringify(v))}catch(e){}}
 };
 let stars=store.get('stars',0),gameType='fill',lastWord=null;
-const gamePool=(()=>{const seen=new Set();return [...letters,...combos].filter(d=>!seen.has(d[3])&&seen.add(d[3]))})();
+// 词库 = 所有字母和组合的全部备选单词（按单词去重）
+const gamePool=(()=>{const seen=new Set(),all=[];[...letters,...combos].forEach(d=>d.words.forEach(w=>{if(!seen.has(w[3])){seen.add(w[3]);all.push(w)}}));return all})();
 const rnd=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
 const HEAR='<button class="tool-btn" id="gHear">🔊 听单词</button>';
