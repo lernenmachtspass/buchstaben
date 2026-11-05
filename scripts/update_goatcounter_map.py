@@ -25,15 +25,22 @@ TIMEOUT = 30
 def api_get(path: str, params: dict | None = None) -> dict:
     if not TOKEN:
         raise RuntimeError("Missing GOATCOUNTER_API_TOKEN environment variable.")
+    print("API:", API)
+    print("Request path:", path)
+    print("Token loaded:", bool(TOKEN))
+    print("Token length:", len(TOKEN) if TOKEN else 0)
     response = requests.get(
         f"{API}/{path.lstrip('/')}",
         params=params,
         headers={
-            "Authorization": f"Bearer {TOKEN}",
-            "Content-Type": "application/json",
+            "Authorization": f"Bearer {TOKEN.strip()}",
+            "Accept": "application/json",
         },
         timeout=TIMEOUT,
     )
+
+    print("HTTP status:", response.status_code)
+    print("API endpoint:", response.url)
     if not response.ok:
         raise RuntimeError(
             f"GoatCounter API request failed ({response.status_code}) "
