@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-11-06T10:56:34.557116+00:00",
+  "generated_at": "2026-11-10T11:16:37.613773+00:00",
   "site": "buchstaben",
   "metric": "pageviews",
-  "total_pageviews": 2,
+  "total_pageviews": 6,
   "locations": [
     {
       "code": "DE",
       "name": "Germany",
-      "count": 2
+      "count": 6
     }
   ],
   "unmapped_location_names": [],
   "period_start": "2000-01-01T00:00:00Z",
-  "period_end": "2026-11-06T10:00:00+00:00"
+  "period_end": "2026-11-10T11:00:00+00:00"
 }
