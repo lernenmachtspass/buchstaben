@@ -1,16 +1,21 @@
 {
-  "generated_at": "2026-11-18T11:46:43.494183+00:00",
+  "generated_at": "2026-11-21T11:07:31.026125+00:00",
   "site": "buchstaben",
   "metric": "pageviews",
-  "total_pageviews": 7,
+  "total_pageviews": 8,
   "locations": [
     {
       "code": "DE",
       "name": "Germany",
       "count": 7
+    },
+    {
+      "code": "TW",
+      "name": "Taiwan, Province of China",
+      "count": 1
     }
   ],
   "unmapped_location_names": [],
   "period_start": "2000-01-01T00:00:00Z",
-  "period_end": "2026-11-18T11:00:00+00:00"
+  "period_end": "2026-11-21T11:00:00+00:00"
 }
